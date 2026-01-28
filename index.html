@@ -3,37 +3,134 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>あさごはんスタンプ</title>
+<title>あさごはんスタンプカード</title>
 <style>
-  body { font-family: system-ui; text-align: center; padding: 20px; }
-  button { font-size: 24px; padding: 16px 24px; }
+  body { font-family: system-ui; padding: 20px; }
+  h1 { text-align: center; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+  select, input, button { font-size: 14px; padding: 6px 10px; }
+  .summary { text-align: center; margin: 12px 0; font-weight: bold; }
+  table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+  th, td { border: 1px solid #ccc; text-align: center; padding: 6px; }
+  th { background: #f5f5f5; }
 </style>
 </head>
 <body>
 
-<h1>おはよう ☀️</h1>
-<p>終了目標 <strong id="limit">7:30</strong></p>
+<h1>🍞 朝ごはんスタンプカード</h1>
+<p style="text-align:center">終了目標：<strong>7:30</strong></p>
 
-<button onclick="finish()">食べ終わった！</button>
+<div class="controls">
+  <label>
+    日にち：
+    <input type="date" id="date">
+  </label>
+  <label>
+    なまえ：
+    <select id="kid"></select>
+  </label>
+  <button onclick="addStamp()">スタンプを押す</button>
+</div>
 
-<p id="result"></p>
+<div class="summary" id="summary"></div>
+
+<table>
+  <thead>
+    <tr>
+      <th>行</th>
+      <th>①</th>
+      <th>②</th>
+      <th>③</th>
+      <th>④</th>
+      <th>⑤</th>
+    </tr>
+  </thead>
+  <tbody id="sheet"></tbody>
+</table>
 
 <script>
 const limitTime = "07:30";
+const kids = ["珠菜", "煌", "琉眞"];
+const COLS = 5;
+const MAX_ROWS = 200;
 
-function finish() {
-  const now = new Date();
-  const hhmm = now.toTimeString().slice(0,5);
-  const today = now.toISOString().slice(0,10);
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
 
-  if (hhmm <= limitTime) {
-    localStorage.setItem(today, "⭐");
-    document.getElementById("result").textContent = "やったね！⭐";
-  } else {
-    localStorage.setItem(today, "×");
-    document.getElementById("result").textContent = "今日は残念…";
+function loadStamps() {
+  return JSON.parse(localStorage.getItem("stamps") || "[]");
+}
+
+function saveStamps(data) {
+  localStorage.setItem("stamps", JSON.stringify(data));
+}
+
+function addStamp() {
+  const date = document.getElementById("date").value;
+  const kid = document.getElementById("kid").value;
+  if (!date || !kid) {
+    alert("日にちとなまえを選んでね");
+    return;
+  }
+
+  const now = new Date().toTimeString().slice(0,5);
+  if (date === today() && now > limitTime) {
+    alert("時間オーバー…");
+    return;
+  }
+
+  const stamps = loadStamps();
+  stamps.push({ date, kid });
+  saveStamps(stamps);
+  render();
+}
+
+function render() {
+  const stamps = loadStamps();
+
+  // 件数集計
+  const counts = {};
+  kids.forEach(k => counts[k] = 0);
+  stamps.forEach(s => counts[s.kid]++);
+
+  document.getElementById("summary").textContent =
+    kids.map(k => `${k}：${counts[k]}個`).join(" ／ ");
+
+  const tbody = document.getElementById("sheet");
+  tbody.innerHTML = "";
+
+  for (let r = 0; r < MAX_ROWS; r++) {
+    const tr = document.createElement("tr");
+    let cells = `<td>${r + 1}</td>`;
+
+    for (let c = 0; c < COLS; c++) {
+      const idx = r * COLS + c;
+      if (idx < stamps.length) {
+        const s = stamps[idx];
+        cells += `<td title="${s.date} ${s.kid}">⭐</td>`;
+      } else {
+        cells += `<td></td>`;
+      }
+    }
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
   }
 }
+
+// 初期化
+const dateInput = document.getElementById("date");
+dateInput.value = today();
+
+const kidSelect = document.getElementById("kid");nkids = kids;
+kids.forEach(k => {
+  const opt = document.createElement("option");
+  opt.value = k;
+  opt.textContent = k;
+  kidSelect.appendChild(opt);
+});
+
+render();
 </script>
 
 </body>
