@@ -102,8 +102,8 @@ const REWARDS = [
   { need: 50, label: "ステーキ🥩(ヒレ肉) 1枚" },
   { need: 100, label: "かに🦀" },
   { need: 200, label: "杉乃井ホテル🏨" },
-  { need: 500, label: "アカハライモリ🐸" },
-  { need: 800, label: "ヒョウモントカゲモドキ🦎" },
+  { need: 500, label: "アカハライモリ🦎" },
+  { need: 800, label: "ヒョウモントカゲモドキ🐸" },
   { need: 1000, label: "フトアゴヒゲトカゲ🐊" }
 ];
 
@@ -182,7 +182,37 @@ function exchange(need, label) {
   const stamps = loadStamps();
   stamps.splice(0, need);
   saveStamps(stamps);
+  playAnimation(label);
   render();
+}
+
+function playAnimation(label) {
+  const anim = document.createElement("div");
+  anim.textContent = `🎉 ${label} GET!! 🎉`;
+  anim.style.position = "fixed";
+  anim.style.top = "50%";
+  anim.style.left = "50%";
+  anim.style.transform = "translate(-50%, -50%) scale(0.5)";
+  anim.style.fontSize = "32px";
+  anim.style.background = "rgba(255,255,255,0.95)";
+  anim.style.padding = "20px 30px";
+  anim.style.borderRadius = "16px";
+  anim.style.boxShadow = "0 8px 20px rgba(0,0,0,0.3)";
+  anim.style.transition = "all 0.6s ease";
+  anim.style.zIndex = "9999";
+
+  document.body.appendChild(anim);
+
+  requestAnimationFrame(() => {
+    anim.style.transform = "translate(-50%, -50%) scale(1.2)";
+  });
+
+  setTimeout(() => {
+    anim.style.opacity = "0";
+    anim.style.transform = "translate(-50%, -60%) scale(1)";
+  }, 1200);
+
+  setTimeout(() => anim.remove(), 1800);
 }
 
 
