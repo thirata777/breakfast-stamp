@@ -108,9 +108,9 @@
     font-size: 8px;          /* フォントも小さめ */
   }
 
-  /* td 文字列は左寄せ */
+  /* td 文字列は中央 */
   #rewards td {
-    text-align: left;
+    text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -311,6 +311,33 @@ function removeAll() {
 
 // 初期化
 document.getElementById("date").value = today();
+
+// ----- 目標時間を localStorage で記憶する処理 -----
+function saveLimit(kid) {
+  const value = document.getElementById(`limit-${kid}`).value;
+  const limits = JSON.parse(localStorage.getItem("limits") || "{}");
+  limits[kid] = value;
+  localStorage.setItem("limits", JSON.stringify(limits));
+}
+
+function loadLimits() {
+  const limits = JSON.parse(localStorage.getItem("limits") || "{}");
+  ["珠菜","煌","琉眞"].forEach(kid => {
+    if(limits[kid]) {
+      document.getElementById(`limit-${kid}`).value = limits[kid];
+    }
+  });
+}
+
+// イベント登録（変更時に自動保存）
+["珠菜","煌","琉眞"].forEach(kid => {
+  document.getElementById(`limit-${kid}`).addEventListener("change", () => saveLimit(kid));
+});
+
+// ページロード時に読み込む
+loadLimits();
+// -----------------------------------------------
+
 render();
 </script>
 
