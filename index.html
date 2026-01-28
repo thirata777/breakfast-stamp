@@ -80,12 +80,23 @@
 
 <div class="settings">
   <h2>🎁 景品交換</h2>
-  <table style="width:100%; border-collapse:collapse; font-size:8px;">
-    <thead>
-      <tr><th style="text-align:left;">必要数</th><th style="text-align:left;">景品</th><th></th></tr>
-    </thead>
-    <tbody id="rewards"></tbody>
-  </table>
+<table style="width:100%; border-collapse:collapse; font-size:10px;">
+  <!-- ここに colgroup を追加 -->
+  <colgroup>
+    <col style="width:15%;">   <!-- 必要数（左列） -->
+    <col style="width:70%;">   <!-- 景品（真ん中列） -->
+    <col style="width:15%;">   <!-- 操作（右列） -->
+  </colgroup>
+
+  <thead>
+    <tr>
+      <th>必要数</th>
+      <th>景品</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody id="rewards"></tbody>
+</table>
 </div>
 
 <div class="settings">
