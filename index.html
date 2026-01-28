@@ -80,24 +80,42 @@
 
 <div class="settings">
   <h2>🎁 景品交換</h2>
-<table style="width:100%; border-collapse:collapse; font-size:10px;">
-  <!-- ここに colgroup を追加 -->
-<table style="width:100%; border-collapse:collapse; font-size:8px; table-layout: fixed;">
-  <colgroup>
-    <col style="width:15%;">
-    <col style="width:70%;">
-    <col style="width:15%;">
-  </colgroup>
-  <thead>
-    <tr>
-      <th>必要数</th>
-      <th>景品</th>
-      <th>操作</th>
-    </tr>
-  </thead>
-  <tbody id="rewards"></tbody>
-</table>
+  <table style="width:100%; border-collapse:collapse; font-size:8px; table-layout: fixed;">
+    <!-- 列幅設定 -->
+    <colgroup>
+      <col style="width:15%;">   <!-- 必要数 -->
+      <col style="width:70%;">   <!-- 景品 -->
+      <col style="width:15%;">   <!-- 操作（ボタン） -->
+    </colgroup>
+
+    <thead>
+      <tr>
+        <th>必要数</th>
+        <th>景品</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="rewards"></tbody>
+  </table>
 </div>
+
+<style>
+  /* ボタンをセル幅に合わせる */
+  #rewards td button {
+    width: 100%;            /* td幅いっぱいに広げる */
+    box-sizing: border-box;  /* パディングを含めて幅計算 */
+    padding: 2px 4px;        /* 小さめに調整 */
+    font-size: 8px;          /* フォントも小さめ */
+  }
+
+  /* td 文字列は左寄せ */
+  #rewards td {
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
 
 <div class="settings">
   <h2>⚙ 目標時間（個人別）</h2>
