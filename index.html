@@ -3,84 +3,123 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>あさごはんスタンプカード</title>
+<title>朝ごはんスタンプカード（最大1000）</title>
 <style>
-  body { font-family: system-ui; padding: 20px; }
+  body { font-family: system-ui, -apple-system, BlinkMacSystemFont; padding: 16px; }
   h1 { text-align: center; }
-  .controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
-  select, input, button { font-size: 14px; padding: 6px 10px; }
-  .summary { text-align: center; margin: 12px 0; font-weight: bold; }
-  table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-  th, td { border: 1px solid #ccc; text-align: center; padding: 6px; }
-  th { background: #f5f5f5; }
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
+  select, input, button { font-size: 14px; padding: 6px 8px; }
+
+  .info { text-align: center; margin-bottom: 8px; font-size: 14px; }
+
+  /* スクロール領域 */
+  .table-wrap {
+    max-height: 420px; /* 6行分くらい */
+    overflow-y: auto;
+    margin: 0 auto;
+    width: fit-content;
+    border: 1px solid #ccc;
+  }
+
+  table { border-collapse: collapse; }
+  td { width: 48px; height: 48px; border: 1px solid #999; text-align: center; font-size: 22px; }
+
+  /* 行番号（表の外・右側） */
+  .row-num {
+    width: 40px;
+    text-align: left;
+    padding-left: 6px;
+    font-size: 12px;
+    color: #555;
+    border: none;
+  }
+
+  .settings { max-width: 420px; margin: 16px auto; border-top: 2px solid #ccc; padding-top: 12px; }
+  .row { display: flex; justify-content: space-between; margin-bottom: 8px; }
 </style>
 </head>
 <body>
 
 <h1>🍞 朝ごはんスタンプカード</h1>
-<p style="text-align:center">終了目標：<strong>7:30</strong></p>
+
+<div class="info">5列 × 6行表示（最大1000スタンプ）／ 🍓珠菜 🔫煌 🪲琉眞</div>
 
 <div class="controls">
+  <label>日にち <input type="date" id="date"></label>
   <label>
-    日にち：
-    <input type="date" id="date">
+    なまえ
+    <select id="kid">
+      <option value="">選択</option>
+      <option value="珠菜">珠菜</option>
+      <option value="煌">煌</option>
+      <option value="琉眞">琉眞</option>
+    </select>
   </label>
-  <label>
-    なまえ：
-    <select id="kid"></select>
-  </label>
-  <button onclick="addStamp()">スタンプを押す</button>
+  <button onclick="addStamp()">スタンプ</button>
 </div>
 
-<div class="summary" id="summary"></div>
+<div class="table-wrap">
+  <table>
+    <tbody id="sheet"></tbody>
+  </table>
+</div>
 
-<table>
-  <thead>
-    <tr>
-      <th>行</th>
-      <th>①</th>
-      <th>②</th>
-      <th>③</th>
-      <th>④</th>
-      <th>⑤</th>
-    </tr>
-  </thead>
-  <tbody id="sheet"></tbody>
-</table>
+<div class="settings">
+  <h2>⚙ 目標時間（個人別）</h2>
+  <div class="row">珠菜 <input type="time" id="limit-珠菜" value="07:30"></div>
+  <div class="row">煌 <input type="time" id="limit-煌" value="07:30"></div>
+  <div class="row">琉眞 <input type="time" id="limit-琉眞" value="07:30"></div>
+</div>
 
 <script>
-const limitTime = "07:30";
-const kids = ["珠菜", "煌", "琉眞"];
 const COLS = 5;
-const MAX_ROWS = 200;
+const VISIBLE_ROWS = 6; // 表示は6行
+const MAX = 1000;
+
+const STAMP = {
+  "珠菜": "🍓",
+  "煌": "🔫",
+  "琉眞": "🪲"
+};
 
 function today() {
   return new Date().toISOString().slice(0,10);
 }
 
 function loadStamps() {
-  return JSON.parse(localStorage.getItem("stamps") || "[]");
+  return JSON.parse(localStorage.getItem("stamps1000") || "[]");
 }
 
 function saveStamps(data) {
-  localStorage.setItem("stamps", JSON.stringify(data));
+  localStorage.setItem("stamps1000", JSON.stringify(data));
 }
 
 function addStamp() {
   const date = document.getElementById("date").value;
   const kid = document.getElementById("kid").value;
   if (!date || !kid) {
-    alert("日にちとなまえを選んでね");
-    return;
-  }
-
-  const now = new Date().toTimeString().slice(0,5);
-  if (date === today() && now > limitTime) {
-    alert("時間オーバー…");
+    alert("日にちとなまえを選んでください");
     return;
   }
 
   const stamps = loadStamps();
+  if (stamps.length >= MAX) {
+    alert("スタンプは1000個までです");
+    return;
+  }
+
+  if (stamps.some(s => s.date === date && s.kid === kid)) {
+    alert("この日はすでにスタンプがあります");
+    return;
+  }
+
+  const limit = document.getElementById(`limit-${kid}`).value;
+  const now = new Date().toTimeString().slice(0,5);
+  if (date === today() && now > limit) {
+    alert("目標時間を過ぎています");
+    return;
+  }
+
   stamps.push({ date, kid });
   saveStamps(stamps);
   render();
@@ -88,48 +127,37 @@ function addStamp() {
 
 function render() {
   const stamps = loadStamps();
-
-  // 件数集計
-  const counts = {};
-  kids.forEach(k => counts[k] = 0);
-  stamps.forEach(s => counts[s.kid]++);
-
-  document.getElementById("summary").textContent =
-    kids.map(k => `${k}：${counts[k]}個`).join(" ／ ");
-
   const tbody = document.getElementById("sheet");
   tbody.innerHTML = "";
 
-  for (let r = 0; r < MAX_ROWS; r++) {
+  const totalRows = Math.ceil(MAX / COLS);
+
+  for (let r = 0; r < totalRows; r++) {
     const tr = document.createElement("tr");
-    let cells = `<td>${r + 1}</td>`;
 
     for (let c = 0; c < COLS; c++) {
       const idx = r * COLS + c;
+      const td = document.createElement("td");
       if (idx < stamps.length) {
         const s = stamps[idx];
-        cells += `<td title="${s.date} ${s.kid}">⭐</td>`;
-      } else {
-        cells += `<td></td>`;
+        td.textContent = STAMP[s.kid] || "⭐";
+        td.title = `${idx + 1}個目：${s.date} ${s.kid}`;
       }
+      tr.appendChild(td);
     }
-    tr.innerHTML = cells;
+
+    // 行番号（5個ごと）
+    const num = document.createElement("td");
+    num.className = "row-num";
+    num.textContent = (r + 1) * COLS;
+    tr.appendChild(num);
+
     tbody.appendChild(tr);
   }
 }
 
 // 初期化
-const dateInput = document.getElementById("date");
-dateInput.value = today();
-
-const kidSelect = document.getElementById("kid");nkids = kids;
-kids.forEach(k => {
-  const opt = document.createElement("option");
-  opt.value = k;
-  opt.textContent = k;
-  kidSelect.appendChild(opt);
-});
-
+document.getElementById("date").value = today();
 render();
 </script>
 
