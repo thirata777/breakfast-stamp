@@ -42,9 +42,10 @@
 
 <h1>🍞 朝ごはんスタンプカード</h1>
 
-<div class="info">5列 × 6行表示（最大1000スタンプ）／ 🍓珠菜 🔫煌 🪲琉眞</div>
+
 
 <div class="controls">
+  <div id="totals" style="width:100%; text-align:center; font-size:14px; margin-bottom:6px;"></div>
   <label>日にち <input type="date" id="date"></label>
   <label>
     なまえ
@@ -56,11 +57,23 @@
     </select>
   </label>
   <button onclick="addStamp()">スタンプ</button>
+  <button onclick="removeOne()">1個削除</button>
+  <button onclick="removeAll()">全削除</button>
 </div>
 
 <div class="table-wrap">
   <table>
     <tbody id="sheet"></tbody>
+  </table>
+</div>
+
+<div class="settings">
+  <h2>🎁 景品交換</h2>
+  <table style="width:100%; border-collapse:collapse; font-size:14px;">
+    <thead>
+      <tr><th style="text-align:left;">必要数</th><th style="text-align:left;">景品</th><th></th></tr>
+    </thead>
+    <tbody id="rewards"></tbody>
   </table>
 </div>
 
@@ -81,6 +94,18 @@ const STAMP = {
   "煌": "🔫",
   "琉眞": "🪲"
 };
+
+const REWARDS = [
+  { need: 10, label: "じゃがりこ 1個" },
+  { need: 20, label: "じゃがりこ 3個" },
+  { need: 30, label: "マック好きなの 3個" },
+  { need: 50, label: "ステーキ🥩(ヒレ肉) 1枚" },
+  { need: 100, label: "かに🦀" },
+  { need: 200, label: "杉乃井ホテル🏨" },
+  { need: 500, label: "アカハライモリ🐸" },
+  { need: 800, label: "ヒョウモントカゲモドキ🦎" },
+  { need: 1000, label: "フトアゴヒゲトカゲ🐊" }
+];
 
 function today() {
   return new Date().toISOString().slice(0,10);
@@ -125,10 +150,55 @@ function addStamp() {
   render();
 }
 
+function renderRewards(total) {
+  const tbody = document.getElementById("rewards");
+  tbody.innerHTML = "";
+
+  REWARDS.forEach(r => {
+    const tr = document.createElement("tr");
+
+    const tdNeed = document.createElement("td");
+    tdNeed.textContent = r.need;
+
+    const tdLabel = document.createElement("td");
+    tdLabel.textContent = r.label;
+
+    const tdBtn = document.createElement("td");
+    const btn = document.createElement("button");
+    btn.textContent = "交換";
+    btn.disabled = total < r.need;
+    btn.onclick = () => exchange(r.need, r.label);
+    tdBtn.appendChild(btn);
+
+    tr.appendChild(tdNeed);
+    tr.appendChild(tdLabel);
+    tr.appendChild(tdBtn);
+    tbody.appendChild(tr);
+  });
+}
+
+function exchange(need, label) {
+  if (!confirm(`${need}個使って「${label}」と交換しますか？`)) return;
+  const stamps = loadStamps();
+  stamps.splice(0, need);
+  saveStamps(stamps);
+  render();
+}
+
+
 function render() {
   const stamps = loadStamps();
   const tbody = document.getElementById("sheet");
   tbody.innerHTML = "";
+
+  // 合計表示
+  const count = { "珠菜": 0, "煌": 0, "琉眞": 0 };
+  stamps.forEach(s => count[s.kid]++);
+  const total = stamps.length;
+  document.getElementById("totals").textContent =
+    `合計 ${total}個 ／ 珠菜 ${count["珠菜"]} ・ 煌 ${count["煌"]} ・ 琉眞 ${count["琉眞"]}`;
+
+  renderRewards(total);
 
   const totalRows = Math.ceil(MAX / COLS);
 
@@ -146,7 +216,6 @@ function render() {
       tr.appendChild(td);
     }
 
-    // 行番号（5個ごと）
     const num = document.createElement("td");
     num.className = "row-num";
     num.textContent = (r + 1) * COLS;
@@ -154,6 +223,20 @@ function render() {
 
     tbody.appendChild(tr);
   }
+}
+
+function removeOne() {
+  const stamps = loadStamps();
+  if (stamps.length === 0) return;
+  stamps.pop();
+  saveStamps(stamps);
+  render();
+}
+
+function removeAll() {
+  if (!confirm("すべてのスタンプを削除しますか？")) return;
+  localStorage.removeItem("stamps1000");
+  render();
 }
 
 // 初期化
