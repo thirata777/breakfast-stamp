@@ -1,59 +1,28 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-
-<!-- iPhone専用アイコン -->
-<link rel="apple-touch-icon" href="stamp-icon-192.png">
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>朝ごはんスタンプカード（最大1000）</title>
 <style>
   body { font-family: system-ui, -apple-system, BlinkMacSystemFont; padding: 16px; }
-  h1 { 
-  text-align: center; 
-  font-size: 20px; /* 元より少し小さめに */
-}
-
-  .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
-  select, input, button { font-size: 14px; padding: 6px 8px; }
-
-  .info { text-align: center; margin-bottom: 8px; font-size: 14px; }
-
-  /* スクロール領域 */
-  .table-wrap {
-    max-height: 420px; /* 6行分くらい */
-    overflow-y: auto;
-    margin: 0 auto;
-    width: fit-content;
-    border: 1px solid #ccc;
-  }
-
+  h1 { text-align:center; font-size:20px; }
+  .controls { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:12px; }
+  select, input, button { font-size:14px; padding:6px 8px; }
+  .info { text-align:center; margin-bottom:8px; font-size:14px; }
+  .table-wrap { max-height:420px; overflow-y:auto; margin:0 auto; width:fit-content; border:1px solid #ccc; }
   table { border-collapse: collapse; }
-  td { width: 48px; height: 48px; border: 1px solid #999; text-align: center; font-size: 22px; }
-
-  /* 行番号（表の外・右側） */
-  .row-num {
-    width: 40px;
-    text-align: left;
-    padding-left: 6px;
-    font-size: 12px;
-    color: #555;
-    border: none;
-  }
-
-  .settings { max-width: 420px; margin: 16px auto; border-top: 2px solid #ccc; padding-top: 12px; }
-  .row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  td { width:48px; height:48px; border:1px solid #999; text-align:center; font-size:22px; }
+  .row-num { width:40px; text-align:left; padding-left:6px; font-size:12px; color:#555; border:none; }
+  .settings { max-width:420px; margin:16px auto; border-top:2px solid #ccc; padding-top:12px; }
+  .row { display:flex; justify-content:space-between; margin-bottom:8px; }
+  #rewards td button { width:100%; box-sizing:border-box; padding:2px 4px; font-size:8px; }
+  #rewards td { text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:14px; }
 </style>
 </head>
 <body>
 
 <h1>🍞 朝ごはんスタンプカード</h1>
-
-
 
 <div class="controls">
   <div id="totals" style="width:100%; text-align:center; font-size:14px; margin-bottom:6px;"></div>
@@ -81,13 +50,11 @@
 <div class="settings">
   <h2>🎁 景品交換</h2>
   <table style="width:100%; border-collapse:collapse; font-size:8px; table-layout: fixed;">
-    <!-- 列幅設定 -->
     <colgroup>
-      <col style="width:15%;">   <!-- 必要数 -->
-      <col style="width:70%;">   <!-- 景品 -->
-      <col style="width:15%;">   <!-- 操作（ボタン） -->
+      <col style="width:15%;">
+      <col style="width:70%;">
+      <col style="width:15%;">
     </colgroup>
-
     <thead>
       <tr>
         <th>必要数</th>
@@ -99,25 +66,6 @@
   </table>
 </div>
 
-<style>
-  /* ボタンをセル幅に合わせる */
-  #rewards td button {
-    width: 100%;            /* td幅いっぱいに広げる */
-    box-sizing: border-box;  /* パディングを含めて幅計算 */
-    padding: 2px 4px;        /* 小さめに調整 */
-    font-size: 8px;          /* フォントも小さめ */
-  }
-
-  /* td 文字列は中央 */
-  #rewards td {
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 14px;          /* フォントも小さめ */
-  }
-</style>
-
 <div class="settings">
   <h2>⚙ 目標時間（個人別）</h2>
   <div class="row">珠菜 <input type="time" id="limit-珠菜" value="07:30"></div>
@@ -127,68 +75,71 @@
 
 <script>
 const COLS = 5;
-const VISIBLE_ROWS = 6; // 表示は6行
 const MAX = 1000;
-
-const STAMP = {
-  "珠菜": "🍓",
-  "煌": "🔫",
-  "琉眞": "🪲"
-};
-
+const STAMP = { "珠菜":"🍓", "煌":"🔫", "琉眞":"🪲" };
 const REWARDS = [
-  { need: 10, label: "じゃがりこ 1個" },
-  { need: 20, label: "じゃがりこ 3個" },
-  { need: 30, label: "マック好きなの 3個" },
-  { need: 50, label: "ステーキ🥩(ヒレ肉) 1枚" },
-  { need: 100, label: "かに🦀" },
-  { need: 200, label: "杉乃井ホテル🏨" },
-  { need: 500, label: "アカハライモリ🦎" },
-  { need: 800, label: "ヒョウモントカゲモドキ🐸" },
-  { need: 1000, label: "フトアゴヒゲトカゲ🐊" }
+  { need: 10, label:"じゃがりこ🍟 1個" },
+  { need: 20, label:"じゃがりこ🍟 3個" },
+  { need: 30, label:"マクドナルド単品🍔 3個" },
+  { need: 50, label:"ヒレステーキ🥩 1枚" },
+  { need:100, label:"かに🦀" },
+  { need:200, label:"杉乃井ホテル🏨" },
+  { need:500, label:"アカハライモリ🦎" },
+  { need:800, label:"ヒョウモントカゲモドキ🐸" },
+  { need:1000, label:"フトアゴヒゲトカゲ🐊" }
 ];
 
+// 今日の日付
 function today() {
   const now = new Date();
-  const jst = new Date(now.getTime() + 9*60*60*1000); // UTC+9時間
+  const jst = new Date(now.getTime() + 9*60*60*1000);
   const yyyy = jst.getFullYear();
   const mm = String(jst.getMonth()+1).padStart(2,'0');
   const dd = String(jst.getDate()).padStart(2,'0');
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function loadStamps() {
-  return JSON.parse(localStorage.getItem("stamps1000") || "[]");
+// localStorage
+function loadStamps() { return JSON.parse(localStorage.getItem("stamps1000")||"[]"); }
+function saveStamps(data) { localStorage.setItem("stamps1000", JSON.stringify(data)); }
+function loadLimits() {
+  const limits = JSON.parse(localStorage.getItem("limits")||"{}");
+  ["珠菜","煌","琉眞"].forEach(kid => { if(limits[kid]) document.getElementById(`limit-${kid}`).value = limits[kid]; });
+}
+function saveLimit(kid) {
+  const value = document.getElementById(`limit-${kid}`).value;
+  const limits = JSON.parse(localStorage.getItem("limits")||"{}");
+  limits[kid] = value;
+  localStorage.setItem("limits", JSON.stringify(limits));
 }
 
-function saveStamps(data) {
-  localStorage.setItem("stamps1000", JSON.stringify(data));
-}
+// イベント登録
+["珠菜","煌","琉眞"].forEach(kid => {
+  document.getElementById(`limit-${kid}`).addEventListener("change", () => saveLimit(kid));
+});
 
+// スタンプ追加
 function addStamp() {
   const date = document.getElementById("date").value;
   const kid = document.getElementById("kid").value;
-  if (!date || !kid) {
-    alert("日にちとなまえを選んでください");
-    return;
-  }
+  if (!date || !kid) { alert("日にちとなまえを選んでください"); return; }
 
   const stamps = loadStamps();
-  if (stamps.length >= MAX) {
-    alert("スタンプは1000個までです");
-    return;
-  }
+  if (stamps.length >= MAX) { alert("スタンプは1000個までです"); return; }
+  if (stamps.some(s=>s.date===date && s.kid===kid)) { alert("この日はすでにスタンプがあります"); return; }
 
-  if (stamps.some(s => s.date === date && s.kid === kid)) {
-    alert("この日はすでにスタンプがあります");
-    return;
-  }
+  // 過去日は不可
+  const selectedDate = new Date(date);
+  const todayDate = new Date(today());
+  if (selectedDate < todayDate) { alert("過去の日付にはスタンプできません"); return; }
 
-  const limit = document.getElementById(`limit-${kid}`).value;
-  const now = new Date().toTimeString().slice(0,5);
-  if (date === today() && now > limit) {
-    alert("目標時間を過ぎています");
-    return;
+  // 今日の場合のみ目標時間チェック
+  if (date === today()) {
+    const limitTime = document.getElementById(`limit-${kid}`).value;
+    const [h,m] = limitTime.split(":").map(Number);
+    const now = new Date();
+    const limitDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+    if (now > limitDate) { alert("目標時間を過ぎています"); return; }
   }
 
   stamps.push({ date, kid });
@@ -196,154 +147,96 @@ function addStamp() {
   render();
 }
 
-function renderRewards(total) {
-  const tbody = document.getElementById("rewards");
-  tbody.innerHTML = "";
-
-  REWARDS.forEach(r => {
-    const tr = document.createElement("tr");
-
-    const tdNeed = document.createElement("td");
-    tdNeed.textContent = r.need;
-
-    const tdLabel = document.createElement("td");
-    tdLabel.textContent = r.label;
-
-    const tdBtn = document.createElement("td");
-    const btn = document.createElement("button");
-    btn.textContent = "交換";
-    btn.disabled = total < r.need;
-    btn.onclick = () => exchange(r.need, r.label);
-    tdBtn.appendChild(btn);
-
-    tr.appendChild(tdNeed);
-    tr.appendChild(tdLabel);
-    tr.appendChild(tdBtn);
-    tbody.appendChild(tr);
-  });
-}
-
-function exchange(need, label) {
-  if (!confirm(`${need}個使って「${label}」と交換しますか？`)) return;
-  const stamps = loadStamps();
-  stamps.splice(0, need);
-  saveStamps(stamps);
-  playAnimation(label);
-  render();
-}
-
-function playAnimation(label) {
-  const anim = document.createElement("div");
-  anim.textContent = `🎉 ${label} GET!! 🎉`;
-  anim.style.position = "fixed";
-  anim.style.top = "50%";
-  anim.style.left = "50%";
-  anim.style.transform = "translate(-50%, -50%) scale(0.5)";
-  anim.style.fontSize = "32px";
-  anim.style.background = "rgba(255,255,255,0.95)";
-  anim.style.padding = "20px 30px";
-  anim.style.borderRadius = "16px";
-  anim.style.boxShadow = "0 8px 20px rgba(0,0,0,0.3)";
-  anim.style.transition = "all 0.6s ease";
-  anim.style.zIndex = "9999";
-
-  document.body.appendChild(anim);
-
-  requestAnimationFrame(() => {
-    anim.style.transform = "translate(-50%, -50%) scale(1.2)";
-  });
-
-  setTimeout(() => {
-    anim.style.opacity = "0";
-    anim.style.transform = "translate(-50%, -60%) scale(1)";
-  }, 1200);
-
-  setTimeout(() => anim.remove(), 1800);
-}
-
-
-function render() {
-  const stamps = loadStamps();
-  const tbody = document.getElementById("sheet");
-  tbody.innerHTML = "";
-
-  // 合計表示
-  const count = { "珠菜": 0, "煌": 0, "琉眞": 0 };
-  stamps.forEach(s => count[s.kid]++);
-  const total = stamps.length;
-  document.getElementById("totals").textContent =
-    `合計 ${total}個 ／ 珠菜 ${count["珠菜"]} ・ 煌 ${count["煌"]} ・ 琉眞 ${count["琉眞"]}`;
-
-  renderRewards(total);
-
-  const totalRows = Math.ceil(MAX / COLS);
-
-  for (let r = 0; r < totalRows; r++) {
-    const tr = document.createElement("tr");
-
-    for (let c = 0; c < COLS; c++) {
-      const idx = r * COLS + c;
-      const td = document.createElement("td");
-      if (idx < stamps.length) {
-        const s = stamps[idx];
-        td.textContent = STAMP[s.kid] || "⭐";
-        td.title = `${idx + 1}個目：${s.date} ${s.kid}`;
-      }
-      tr.appendChild(td);
-    }
-
-    const num = document.createElement("td");
-    num.className = "row-num";
-    num.textContent = (r + 1) * COLS;
-    tr.appendChild(num);
-
-    tbody.appendChild(tr);
-  }
-}
-
+// スタンプ削除
 function removeOne() {
   const stamps = loadStamps();
-  if (stamps.length === 0) return;
+  if (stamps.length===0) return;
   stamps.pop();
   saveStamps(stamps);
   render();
 }
-
 function removeAll() {
   if (!confirm("すべてのスタンプを削除しますか？")) return;
   localStorage.removeItem("stamps1000");
   render();
 }
 
-// 初期化
-document.getElementById("date").value = today();
-
-// ----- 目標時間を localStorage で記憶する処理 -----
-function saveLimit(kid) {
-  const value = document.getElementById(`limit-${kid}`).value;
-  const limits = JSON.parse(localStorage.getItem("limits") || "{}");
-  limits[kid] = value;
-  localStorage.setItem("limits", JSON.stringify(limits));
-}
-
-function loadLimits() {
-  const limits = JSON.parse(localStorage.getItem("limits") || "{}");
-  ["珠菜","煌","琉眞"].forEach(kid => {
-    if(limits[kid]) {
-      document.getElementById(`limit-${kid}`).value = limits[kid];
-    }
+// 景品交換
+function renderRewards(total) {
+  const tbody = document.getElementById("rewards");
+  tbody.innerHTML="";
+  REWARDS.forEach(r=>{
+    const tr=document.createElement("tr");
+    const tdNeed=document.createElement("td"); tdNeed.textContent=r.need;
+    const tdLabel=document.createElement("td"); tdLabel.textContent=r.label;
+    const tdBtn=document.createElement("td");
+    const btn=document.createElement("button");
+    btn.textContent="交換"; btn.disabled=total<r.need;
+    btn.onclick=()=>exchange(r.need,r.label);
+    tdBtn.appendChild(btn);
+    tr.appendChild(tdNeed); tr.appendChild(tdLabel); tr.appendChild(tdBtn);
+    tbody.appendChild(tr);
   });
 }
+function exchange(need,label){
+  if(!confirm(`${need}個使って「${label}」と交換しますか？`)) return;
+  const stamps = loadStamps();
+  stamps.splice(0, need);
+  saveStamps(stamps);
+  playAnimation(label);
+  render();
+}
+function playAnimation(label){
+  const anim=document.createElement("div");
+  anim.textContent=`🎉 ${label} GET!! 🎉`;
+  anim.style.position="fixed";
+  anim.style.top="50%"; anim.style.left="50%";
+  anim.style.transform="translate(-50%,-50%) scale(0.5)";
+  anim.style.fontSize="32px"; anim.style.background="rgba(255,255,255,0.95)";
+  anim.style.padding="20px 30px"; anim.style.borderRadius="16px";
+  anim.style.boxShadow="0 8px 20px rgba(0,0,0,0.3)";
+  anim.style.transition="all 0.6s ease"; anim.style.zIndex="9999";
+  document.body.appendChild(anim);
+  requestAnimationFrame(()=>{ anim.style.transform="translate(-50%,-50%) scale(1.2)"; });
+  setTimeout(()=>{ anim.style.opacity="0"; anim.style.transform="translate(-50%,-60%) scale(1)"; }, 1200);
+  setTimeout(()=>anim.remove(),1800);
+}
 
-// イベント登録（変更時に自動保存）
-["珠菜","煌","琉眞"].forEach(kid => {
-  document.getElementById(`limit-${kid}`).addEventListener("change", () => saveLimit(kid));
-});
+// 表の描画
+function render() {
+  const stamps=loadStamps();
+  const tbody=document.getElementById("sheet");
+  tbody.innerHTML="";
+  const count={ "珠菜":0, "煌":0, "琉眞":0 };
+  stamps.forEach(s=>count[s.kid]++);
+  const total=stamps.length;
+  document.getElementById("totals").textContent=
+    `合計 ${total}個 ／ 珠菜 ${count["珠菜"]} ・ 煌 ${count["煌"]} ・ 琉眞 ${count["琉眞"]}`;
+  renderRewards(total);
 
-// ページロード時に読み込む
+  const totalRows = Math.ceil(MAX / COLS);
+  for(let r=0;r<totalRows;r++){
+    const tr=document.createElement("tr");
+    for(let c=0;c<COLS;c++){
+      const idx=r*COLS+c;
+      const td=document.createElement("td");
+      if(idx<stamps.length){
+        const s=stamps[idx];
+        td.textContent=STAMP[s.kid]||"⭐";
+        td.title=`${idx+1}個目：${s.date} ${s.kid}`;
+      }
+      tr.appendChild(td);
+    }
+    const num=document.createElement("td");
+    num.className="row-num"; num.textContent=(r+1)*COLS;
+    tr.appendChild(num);
+    tbody.appendChild(tr);
+  }
+}
+
+// 初期化
+document.getElementById("date").value = today();
 loadLimits();
-// -----------------------------------------------
-
 render();
 </script>
 
