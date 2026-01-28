@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>あさごはんスタンプ</title>
+<style>
+  body { font-family: system-ui; text-align: center; padding: 20px; }
+  button { font-size: 24px; padding: 16px 24px; }
+</style>
+</head>
+<body>
+
+<h1>おはよう ☀️</h1>
+<p>終了目標 <strong id="limit">7:30</strong></p>
+
+<button onclick="finish()">食べ終わった！</button>
+
+<p id="result"></p>
+
+<script>
+const limitTime = "07:30";
+
+function finish() {
+  const now = new Date();
+  const hhmm = now.toTimeString().slice(0,5);
+  const today = now.toISOString().slice(0,10);
+
+  if (hhmm <= limitTime) {
+    localStorage.setItem(today, "⭐");
+    document.getElementById("result").textContent = "やったね！⭐";
+  } else {
+    localStorage.setItem(today, "×");
+    document.getElementById("result").textContent = "今日は残念…";
+  }
+}
+</script>
+
+</body>
+</html>
