@@ -1,28 +1,13 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>朝ごはんスタンプカード（最大1000）</title>
 <style>
-  body {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont;
-    padding: 16px;
-
-    /* おしゃれ背景 */
-    background: linear-gradient(135deg, #ffe6cc, #ffccff);
-    background-repeat: repeat;
-    background-size: 200px 200px;
-    background-image: url('icon-512.png');
-    background-position: center top;
-    background-attachment: fixed;
-  }
-
-  h1 {
-    text-align: center;
-    font-size: 22px; /* 少し小さく */
-  }
-
+  body { font-family: system-ui, -apple-system, BlinkMacSystemFont; padding: 16px; }
+  h1 { text-align: center; }
   .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
   select, input, button { font-size: 14px; padding: 6px 8px; }
 
@@ -57,6 +42,8 @@
 <body>
 
 <h1>🍞 朝ごはんスタンプカード</h1>
+
+
 
 <div class="controls">
   <div id="totals" style="width:100%; text-align:center; font-size:14px; margin-bottom:6px;"></div>
@@ -100,6 +87,7 @@
 
 <script>
 const COLS = 5;
+const VISIBLE_ROWS = 6; // 表示は6行
 const MAX = 1000;
 
 const STAMP = {
@@ -120,23 +108,172 @@ const REWARDS = [
   { need: 1000, label: "フトアゴヒゲトカゲ🐊" }
 ];
 
-function today() { return new Date().toISOString().slice(0,10); }
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
 
-function loadStamps() { return JSON.parse(localStorage.getItem("stamps1000") || "[]"); }
-function saveStamps(data) { localStorage.setItem("stamps1000", JSON.stringify(data)); }
+function loadStamps() {
+  return JSON.parse(localStorage.getItem("stamps1000") || "[]");
+}
+
+function saveStamps(data) {
+  localStorage.setItem("stamps1000", JSON.stringify(data));
+}
 
 function addStamp() {
   const date = document.getElementById("date").value;
   const kid = document.getElementById("kid").value;
-  if (!date || !kid) { alert("日にちとなまえを選んでください"); return; }
+  if (!date || !kid) {
+    alert("日にちとなまえを選んでください");
+    return;
+  }
 
   const stamps = loadStamps();
-  if (stamps.length >= MAX) { alert("スタンプは1000個までです"); return; }
-  if (stamps.some(s => s.date === date && s.kid === kid)) { alert("この日はすでにスタンプがあります"); return; }
+  if (stamps.length >= MAX) {
+    alert("スタンプは1000個までです");
+    return;
+  }
+
+  if (stamps.some(s => s.date === date && s.kid === kid)) {
+    alert("この日はすでにスタンプがあります");
+    return;
+  }
 
   const limit = document.getElementById(`limit-${kid}`).value;
   const now = new Date().toTimeString().slice(0,5);
-  if (date === today() && now > limit) { alert("目標時間を過ぎています"); return; }
+  if (date === today() && now > limit) {
+    alert("目標時間を過ぎています");
+    return;
+  }
 
   stamps.push({ date, kid });
-  saveStamps(sta
+  saveStamps(stamps);
+  render();
+}
+
+function renderRewards(total) {
+  const tbody = document.getElementById("rewards");
+  tbody.innerHTML = "";
+
+  REWARDS.forEach(r => {
+    const tr = document.createElement("tr");
+
+    const tdNeed = document.createElement("td");
+    tdNeed.textContent = r.need;
+
+    const tdLabel = document.createElement("td");
+    tdLabel.textContent = r.label;
+
+    const tdBtn = document.createElement("td");
+    const btn = document.createElement("button");
+    btn.textContent = "交換";
+    btn.disabled = total < r.need;
+    btn.onclick = () => exchange(r.need, r.label);
+    tdBtn.appendChild(btn);
+
+    tr.appendChild(tdNeed);
+    tr.appendChild(tdLabel);
+    tr.appendChild(tdBtn);
+    tbody.appendChild(tr);
+  });
+}
+
+function exchange(need, label) {
+  if (!confirm(`${need}個使って「${label}」と交換しますか？`)) return;
+  const stamps = loadStamps();
+  stamps.splice(0, need);
+  saveStamps(stamps);
+  playAnimation(label);
+  render();
+}
+
+function playAnimation(label) {
+  const anim = document.createElement("div");
+  anim.textContent = `🎉 ${label} GET!! 🎉`;
+  anim.style.position = "fixed";
+  anim.style.top = "50%";
+  anim.style.left = "50%";
+  anim.style.transform = "translate(-50%, -50%) scale(0.5)";
+  anim.style.fontSize = "32px";
+  anim.style.background = "rgba(255,255,255,0.95)";
+  anim.style.padding = "20px 30px";
+  anim.style.borderRadius = "16px";
+  anim.style.boxShadow = "0 8px 20px rgba(0,0,0,0.3)";
+  anim.style.transition = "all 0.6s ease";
+  anim.style.zIndex = "9999";
+
+  document.body.appendChild(anim);
+
+  requestAnimationFrame(() => {
+    anim.style.transform = "translate(-50%, -50%) scale(1.2)";
+  });
+
+  setTimeout(() => {
+    anim.style.opacity = "0";
+    anim.style.transform = "translate(-50%, -60%) scale(1)";
+  }, 1200);
+
+  setTimeout(() => anim.remove(), 1800);
+}
+
+
+function render() {
+  const stamps = loadStamps();
+  const tbody = document.getElementById("sheet");
+  tbody.innerHTML = "";
+
+  // 合計表示
+  const count = { "珠菜": 0, "煌": 0, "琉眞": 0 };
+  stamps.forEach(s => count[s.kid]++);
+  const total = stamps.length;
+  document.getElementById("totals").textContent =
+    `合計 ${total}個 ／ 珠菜 ${count["珠菜"]} ・ 煌 ${count["煌"]} ・ 琉眞 ${count["琉眞"]}`;
+
+  renderRewards(total);
+
+  const totalRows = Math.ceil(MAX / COLS);
+
+  for (let r = 0; r < totalRows; r++) {
+    const tr = document.createElement("tr");
+
+    for (let c = 0; c < COLS; c++) {
+      const idx = r * COLS + c;
+      const td = document.createElement("td");
+      if (idx < stamps.length) {
+        const s = stamps[idx];
+        td.textContent = STAMP[s.kid] || "⭐";
+        td.title = `${idx + 1}個目：${s.date} ${s.kid}`;
+      }
+      tr.appendChild(td);
+    }
+
+    const num = document.createElement("td");
+    num.className = "row-num";
+    num.textContent = (r + 1) * COLS;
+    tr.appendChild(num);
+
+    tbody.appendChild(tr);
+  }
+}
+
+function removeOne() {
+  const stamps = loadStamps();
+  if (stamps.length === 0) return;
+  stamps.pop();
+  saveStamps(stamps);
+  render();
+}
+
+function removeAll() {
+  if (!confirm("すべてのスタンプを削除しますか？")) return;
+  localStorage.removeItem("stamps1000");
+  render();
+}
+
+// 初期化
+document.getElementById("date").value = today();
+render();
+</script>
+
+</body>
+</html>
