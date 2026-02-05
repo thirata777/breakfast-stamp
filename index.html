@@ -39,7 +39,7 @@
 <div class="parent-box">
   🔒 保護者モード：<b id="parentState">OFF</b>
   <button onclick="toggleParent()">切替</button>
-  <button onclick="changePin()">PIN変更</button>
+<button id="btnChangePin" onclick="changePin()">PIN変更</button>
 </div>
 
 <div class="controls">
@@ -53,9 +53,9 @@
     </select>
   </label>
   <label><input type="checkbox" id="special"> スペシャル</label>
-  <button onclick="addStamp()">スタンプ</button>
-  <button onclick="removeOne()">1個削除</button>
-  <button onclick="removeAll()">全削除</button>
+<button onclick="addStamp()">スタンプ</button>
+<button id="btnRemoveOne" onclick="removeOne()">1個削除</button>
+<button id="btnRemoveAll" onclick="removeAll()">全削除</button>
 <div style="font-size:12px;">
   <div style="margin-bottom:4px;">⏰ 目標時間</div>
   <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
@@ -282,6 +282,10 @@ KIDS.forEach(k => {
   if(el) el.disabled = !parentMode;
 });
 
+// 子どもモードでは危険操作ボタンを無効化
+document.getElementById("btnRemoveOne").disabled = !parentMode;
+document.getElementById("btnRemoveAll").disabled = !parentMode;
+document.getElementById("btnChangePin").disabled = !parentMode;
 
 // 目標時間を3人分表示
 KIDS.forEach(k => {
@@ -309,6 +313,10 @@ document.getElementById("date").value = today();
 
 // 日付は保護者モードのみ編集可
 document.getElementById("date").disabled = !parentMode;
+
+document.getElementById("btnRemoveOne").disabled = true;
+document.getElementById("btnRemoveAll").disabled = true;
+document.getElementById("btnChangePin").disabled = true;
 
 render();
 
