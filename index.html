@@ -56,12 +56,21 @@
 
 <div class="settings">
   <h2>🎁 景品交換</h2>
-  <table style="width:100%; border-collapse:collapse; font-size:8px; table-layout: fixed;">
-    <thead>
-      <tr><th>必要数</th><th>景品</th><th>操作</th></tr>
-    </thead>
-    <tbody id="rewards"></tbody>
-  </table>
+<table style="width:100%; border-collapse:collapse; font-size:8px; table-layout: fixed;">
+  <colgroup>
+    <col style="width:15%;">
+    <col style="width:70%;">
+    <col style="width:15%;">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>必要数</th>
+      <th>景品</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody id="rewards"></tbody>
+</table>
 </div>
 
 <div class="settings">
@@ -153,7 +162,11 @@ function renderRewards(total){
 function exchange(need,label){
   if(!parentMode) return alert("交換は保護者モードのみ");
   if(!confirm(`${need}個使って「${label}」と交換しますか？`)) return;
-  const s=loadStamps(); s.splice(0,need); saveStamps(s); render();
+  const s=loadStamps(); 
+  s.splice(0,need); 
+  saveStamps(s);
+  playAnimation(label);   // ← アニメーション
+  render();
 }
 
 function render(){
@@ -214,6 +227,36 @@ function renderHistory(stamps){
 
 document.getElementById("date").value = today();
 render();
+
+function playAnimation(label){
+  const anim=document.createElement("div");
+  anim.textContent=`🎉 ${label} GET!! 🎉`;
+  anim.style.position="fixed";
+  anim.style.top="50%"; 
+  anim.style.left="50%";
+  anim.style.transform="translate(-50%,-50%) scale(0.5)";
+  anim.style.fontSize="28px";
+  anim.style.background="rgba(255,255,255,0.95)";
+  anim.style.padding="20px 24px";
+  anim.style.borderRadius="16px";
+  anim.style.boxShadow="0 8px 20px rgba(0,0,0,0.3)";
+  anim.style.transition="all 0.6s ease";
+  anim.style.zIndex="9999";
+  document.body.appendChild(anim);
+
+  requestAnimationFrame(()=>{
+    anim.style.transform="translate(-50%,-50%) scale(1.1)";
+  });
+
+  setTimeout(()=>{
+    anim.style.opacity="0";
+    anim.style.transform="translate(-50%,-60%) scale(1)";
+  }, 1200);
+
+  setTimeout(()=>anim.remove(), 1800);
+}
+
+
 </script>
 </body>
 </html>
