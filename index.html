@@ -92,11 +92,13 @@
 
 <script>
 
-function loadTargetTime(){
-  return localStorage.getItem("targetTime") || "07:30";
+function loadTargetTime(kid){
+  if(!kid) return "07:30";
+  return localStorage.getItem("targetTime_" + kid) || "07:30";
 }
-function saveTargetTime(t){
-  localStorage.setItem("targetTime", t);
+function saveTargetTime(kid, t){
+  if(!kid) return;
+  localStorage.setItem("targetTime_" + kid, t);
 }
 
 const COLS = 5;
@@ -126,6 +128,7 @@ let parentMode = false;
 
 function toggleParent(){
   const pin = prompt("保護者PINを入力（初期: 1234）");
+  if(pin === null) return;   // ← これ追加
   if(pin !== getPin()) return alert("PINが違います");
   parentMode = !parentMode;
   document.getElementById("parentState").textContent = parentMode ? "ON" : "OFF";
@@ -161,7 +164,7 @@ function addStamp(){
     // 時間制限
     const now = new Date();
     const nowMin = now.getHours()*60 + now.getMinutes();
-    const [h,m] = loadTargetTime().split(":").map(Number);
+    const [h,m] = loadTargetTime(kid).split(":").map(Number);
     const limitMin = h*60 + m;
 
     if(nowMin > limitMin){
@@ -254,7 +257,9 @@ function render(){
     tbody.appendChild(tr);
   }
 
- document.getElementById("targetTime").value = loadTargetTime();
+ const kid = document.getElementById("kid").value;
+ document.getElementById("targetTime").value = loadTargetTime(kid);
+
  document.getElementById("special").disabled = !parentMode;
 
 }
@@ -305,9 +310,11 @@ function playAnimation(label){
   setTimeout(()=>anim.remove(), 1800);
 }
 
-  document.getElementById("targetTime").addEventListener("change", e=>{
-    saveTargetTime(e.target.value);
-  });
+document.getElementById("targetTime").addEventListener("change", e=>{
+  const kid = document.getElementById("kid").value;
+  if(!kid) return alert("先になまえを選んでね");
+  saveTargetTime(kid, e.target.value);
+});
 
 </script>
 </body>
