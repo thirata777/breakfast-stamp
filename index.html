@@ -14,10 +14,12 @@
   td { width:48px; height:48px; border:1px solid #999; text-align:center; font-size:22px; cursor:pointer; }
   .row-num { width:40px; text-align:left; padding-left:6px; font-size:12px; color:#555; border:none; cursor:default; }
   .settings { max-width:420px; margin:16px auto; border-top:2px solid #ccc; padding-top:12px; }
+  #rewards td button { width:100%; box-sizing:border-box; padding:2px 4px; font-size:8px; }
+  #rewards td { text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:14px; }
   .history-box { border:1px solid #ccc; border-radius:8px; padding:8px; margin-bottom:10px; background:#fafafa; }
   .history-list { font-size:12px; max-height:120px; overflow:auto; }
   .parent-box { text-align:center; margin-bottom:10px; }
-  .special-cell { background: #fff3a0; } /* ← ここが黄色 */
+  .special-cell { background:#fff3a0; } /* スペシャルは黄色 */
 </style>
 </head>
 <body>
@@ -25,8 +27,7 @@
 <h1>🍞 朝ごはんスタンプカード</h1>
 
 <div class="parent-box">
-  🔒 保護者モード：
-  <span id="parentState">OFF</span>
+  🔒 保護者モード：<b id="parentState">OFF</b>
   <button onclick="toggleParent()">切替</button>
   <button onclick="changePin()">PIN変更</button>
 </div>
@@ -54,6 +55,16 @@
 </div>
 
 <div class="settings">
+  <h2>🎁 景品交換</h2>
+  <table style="width:100%; border-collapse:collapse; font-size:8px; table-layout: fixed;">
+    <thead>
+      <tr><th>必要数</th><th>景品</th><th>操作</th></tr>
+    </thead>
+    <tbody id="rewards"></tbody>
+  </table>
+</div>
+
+<div class="settings">
   <h2>📜 兄弟それぞれの履歴</h2>
   <div id="history"></div>
 </div>
@@ -63,29 +74,40 @@ const COLS = 5;
 const MAX = 1000;
 const STAMP = { "珠菜":"🍓", "煌":"🔫", "琉眞":"🪲" };
 const KIDS = ["珠菜","煌","琉眞"];
+const REWARDS = [
+  { need: 10, label:"じゃがりこ🍟 1個" },
+  { need: 20, label:"じゃがりこ🍟 3個" },
+  { need: 30, label:"マクドナルド単品🍔 3個" },
+  { need: 50, label:"ヒレステーキ🥩 1枚" },
+  { need:100, label:"かに🦀" },
+  { need:200, label:"杉乃井ホテル🏨" },
+  { need:500, label:"アカハライモリ🦎" },
+  { need:800, label:"ヒョウモントカゲモドキ🐸" },
+  { need:1000, label:"フトアゴヒゲトカゲ🐊" }
+];
 
 function today(){ return new Date().toISOString().slice(0,10); }
 function loadStamps(){ return JSON.parse(localStorage.getItem("stamps1000")||"[]"); }
 function saveStamps(d){ localStorage.setItem("stamps1000",JSON.stringify(d)); }
 
-let parentMode = false;
+// PIN（初期 1234）
 function getPin(){ return localStorage.getItem("parentPin") || "1234"; }
 function setPin(pin){ localStorage.setItem("parentPin", pin); }
+let parentMode = false;
 
 function toggleParent(){
-  const pin = prompt("保護者PINを入力");
+  const pin = prompt("保護者PINを入力（初期: 1234）");
   if(pin !== getPin()) return alert("PINが違います");
   parentMode = !parentMode;
   document.getElementById("parentState").textContent = parentMode ? "ON" : "OFF";
 }
-
 function changePin(){
   const pin = prompt("現在のPIN");
   if(pin !== getPin()) return alert("PINが違います");
   const newPin = prompt("新しい4桁PIN");
   if(!/^\d{4}$/.test(newPin)) return alert("4桁の数字で入力してください");
   setPin(newPin);
-  alert("変更しました");
+  alert("PINを変更しました");
 }
 
 function addStamp(){
@@ -93,8 +115,8 @@ function addStamp(){
   let date = document.getElementById("date").value;
   const special = document.getElementById("special").checked;
   if(!kid) return alert("なまえを選んでください");
-  if(!parentMode){ date = today(); }
-  else if(special){ date = "SPECIAL"; }
+  if(!parentMode) date = today();
+  if(parentMode && special) date = "SPECIAL";
   const stamps = loadStamps();
   stamps.push({kid, date});
   saveStamps(stamps);
@@ -112,6 +134,28 @@ function removeAll(){
   }
 }
 
+function renderRewards(total){
+  const tbody=document.getElementById("rewards");
+  tbody.innerHTML="";
+  REWARDS.forEach(r=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML = `<td>${r.need}</td><td>${r.label}</td>`;
+    const td=document.createElement("td");
+    const btn=document.createElement("button");
+    btn.textContent="交換";
+    btn.disabled = total < r.need;
+    btn.onclick = ()=>exchange(r.need, r.label);
+    td.appendChild(btn);
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  });
+}
+function exchange(need,label){
+  if(!parentMode) return alert("交換は保護者モードのみ");
+  if(!confirm(`${need}個使って「${label}」と交換しますか？`)) return;
+  const s=loadStamps(); s.splice(0,need); saveStamps(s); render();
+}
+
 function render(){
   const stamps=loadStamps();
   const tbody=document.getElementById("sheet");
@@ -121,6 +165,7 @@ function render(){
   document.getElementById("totals").textContent =
     `合計 ${stamps.length}個 ／ 珠菜 ${count["珠菜"]} ・ 煌 ${count["煌"]} ・ 琉眞 ${count["琉眞"]}`;
 
+  renderRewards(stamps.length);
   renderHistory(stamps);
 
   const rows=Math.ceil(MAX/COLS);
