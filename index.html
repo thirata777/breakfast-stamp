@@ -157,7 +157,7 @@ function addStamp(){
   const stamps = loadStamps();
   const todayStr = today();
 
-  // 子どもモード制限
+  // 子どもモード
   if(!parentMode){
     date = todayStr;
 
@@ -177,6 +177,15 @@ function addStamp(){
     }
   }
 
+  // ★ 保護者モードでも「ノーマルは同日1回まで」
+  if(parentMode && !special){
+    if(!date) return alert("日にちを選んでください");
+    if(stamps.some(s => s.kid===kid && s.date===date)){
+      return alert("同じ日にノーマルスタンプは1個までです");
+    }
+  }
+
+  // スペシャルは保護者のみ・日付無視
   if(parentMode && special) date = "SPECIAL";
 
   stamps.push({kid, date});
@@ -263,6 +272,16 @@ function render(){
   }
 
  document.getElementById("special").disabled = !parentMode;
+
+// 日付は保護者モードのみ編集可
+document.getElementById("date").disabled = !parentMode;
+
+// 目標時間は保護者モードのみ変更可
+KIDS.forEach(k => {
+  const el = document.getElementById("target_" + k);
+  if(el) el.disabled = !parentMode;
+});
+
 
 // 目標時間を3人分表示
 KIDS.forEach(k => {
