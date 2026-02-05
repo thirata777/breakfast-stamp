@@ -18,6 +18,24 @@
   .row { display:flex; justify-content:space-between; margin-bottom:8px; }
   #rewards td button { width:100%; box-sizing:border-box; padding:2px 4px; font-size:8px; }
   #rewards td { text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:14px; }
+.history-box {
+  border:1px solid #ccc;
+  border-radius:8px;
+  padding:8px;
+  margin-bottom:10px;
+  background:#fafafa;
+}
+.history-box h3 {
+  margin:0 0 6px 0;
+  font-size:14px;
+}
+.history-list {
+  font-size:12px;
+  line-height:1.5;
+  max-height:120px;
+  overflow-y:auto;
+}
+
 </style>
 </head>
 <body>
@@ -71,6 +89,11 @@
   <div class="row">珠菜 <input type="time" id="limit-珠菜" value="07:30"></div>
   <div class="row">煌 <input type="time" id="limit-煌" value="07:30"></div>
   <div class="row">琉眞 <input type="time" id="limit-琉眞" value="07:30"></div>
+</div>
+
+<div class="settings">
+  <h2>📜 兄弟それぞれの履歴</h2>
+  <div id="history"></div>
 </div>
 
 <script>
@@ -213,6 +236,39 @@ function render() {
   document.getElementById("totals").textContent=
     `合計 ${total}個 ／ 珠菜 ${count["珠菜"]} ・ 煌 ${count["煌"]} ・ 琉眞 ${count["琉眞"]}`;
   renderRewards(total);
+  renderHistory(stamps);
+
+function renderHistory(stamps){
+  const box = document.getElementById("history");
+  box.innerHTML = "";
+
+  ["珠菜","煌","琉眞"].forEach(kid=>{
+    const list = stamps.filter(s => s.kid === kid);
+
+    const div = document.createElement("div");
+    div.className = "history-box";
+
+    const h3 = document.createElement("h3");
+    h3.textContent = `${kid}（${list.length}個）`;
+    div.appendChild(h3);
+
+    const ul = document.createElement("div");
+    ul.className = "history-list";
+
+    if(list.length === 0){
+      ul.textContent = "まだスタンプはありません";
+    } else {
+      ul.innerHTML = list
+        .slice().reverse()
+        .map(s => `📅 ${s.date}`)
+        .join("<br>");
+    }
+
+    div.appendChild(ul);
+    box.appendChild(div);
+  });
+}
+
 
   const totalRows = Math.ceil(MAX / COLS);
   for(let r=0;r<totalRows;r++){
