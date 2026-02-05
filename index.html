@@ -56,14 +56,13 @@
   <button onclick="addStamp()">スタンプ</button>
   <button onclick="removeOne()">1個削除</button>
   <button onclick="removeAll()">全削除</button>
-  <div style="font-size:12px;">
-  <div>⏰ 目標時間</div>
-  <div>珠菜：<input type="time" id="target_珠菜"></div>
-  <div>　煌：<input type="time" id="target_煌"></div>
-  <div>琉眞：<input type="time" id="target_琉眞"></div>
-</div>
-
-
+<div style="font-size:12px;">
+  <div style="margin-bottom:4px;">⏰ 目標時間</div>
+  <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+    <label>珠菜：<input type="time" id="target_珠菜"></label>
+    <label>煌：<input type="time" id="target_煌"></label>
+    <label>琉眞：<input type="time" id="target_琉眞"></label>
+  </div>
 </div>
 
 <div id="totals" style="text-align:center;margin-bottom:8px;"></div>
@@ -288,6 +287,10 @@ function renderHistory(stamps){
 }
 
 document.getElementById("date").value = today();
+
+// 日付は保護者モードのみ編集可
+document.getElementById("date").disabled = !parentMode;
+
 render();
 
 KIDS.forEach(k => {
