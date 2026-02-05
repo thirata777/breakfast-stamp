@@ -17,6 +17,7 @@
   .history-box { border:1px solid #ccc; border-radius:8px; padding:8px; margin-bottom:10px; background:#fafafa; }
   .history-list { font-size:12px; max-height:120px; overflow:auto; }
   .parent-box { text-align:center; margin-bottom:10px; }
+  .special-cell { background: #fff3a0; } /* ← ここが黄色 */
 </style>
 </head>
 <body>
@@ -132,6 +133,7 @@ function render(){
         const s=stamps[idx];
         td.textContent = STAMP[s.kid];
         td.title = s.date==="SPECIAL" ? "スペシャル" : s.date;
+        if(s.date==="SPECIAL") td.classList.add("special-cell");
         td.onclick = () => {
           if(!parentMode) return;
           if(confirm(`このスタンプを削除しますか？\n${s.kid} / ${s.date}`)){
