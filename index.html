@@ -56,7 +56,13 @@
   <button onclick="addStamp()">スタンプ</button>
   <button onclick="removeOne()">1個削除</button>
   <button onclick="removeAll()">全削除</button>
-  <label>目標時間 <input type="time" id="targetTime"></label>
+  <div style="font-size:12px;">
+  <div>⏰ 目標時間</div>
+  <div>珠菜：<input type="time" id="target_珠菜"></div>
+  <div>煌：<input type="time" id="target_煌"></div>
+  <div>琉眞：<input type="time" id="target_琉眞"></div>
+</div>
+
 
 </div>
 
@@ -257,10 +263,13 @@ function render(){
     tbody.appendChild(tr);
   }
 
- const kid = document.getElementById("kid").value;
- document.getElementById("targetTime").value = loadTargetTime(kid);
-
  document.getElementById("special").disabled = !parentMode;
+
+// 目標時間を3人分表示
+KIDS.forEach(k => {
+  const el = document.getElementById("target_" + k);
+  if(el) el.value = loadTargetTime(k);
+});
 
 }
 
@@ -281,6 +290,12 @@ function renderHistory(stamps){
 document.getElementById("date").value = today();
 render();
 
+KIDS.forEach(k => {
+  const el = document.getElementById("target_" + k);
+  el.addEventListener("change", e => {
+    saveTargetTime(k, e.target.value);
+  });
+});
 
 function playAnimation(label){
   const anim=document.createElement("div");
@@ -309,12 +324,6 @@ function playAnimation(label){
 
   setTimeout(()=>anim.remove(), 1800);
 }
-
-document.getElementById("targetTime").addEventListener("change", e=>{
-  const kid = document.getElementById("kid").value;
-  if(!kid) return alert("先になまえを選んでね");
-  saveTargetTime(kid, e.target.value);
-});
 
 </script>
 </body>
