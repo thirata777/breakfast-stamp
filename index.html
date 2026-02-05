@@ -21,6 +21,16 @@
   .parent-box { text-align:center; margin-bottom:10px; }
   .special-cell { background:#fff3a0; } /* スペシャルは黄色 */
 </style>
+
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="朝ごはんスタンプ">
+
 </head>
 <body>
 
@@ -46,6 +56,8 @@
   <button onclick="addStamp()">スタンプ</button>
   <button onclick="removeOne()">1個削除</button>
   <button onclick="removeAll()">全削除</button>
+  <label>目標時間 <input type="time" id="targetTime"></label>
+
 </div>
 
 <div id="totals" style="text-align:center;margin-bottom:8px;"></div>
@@ -79,6 +91,14 @@
 </div>
 
 <script>
+
+function loadTargetTime(){
+  return localStorage.getItem("targetTime") || "07:30";
+}
+function saveTargetTime(t){
+  localStorage.setItem("targetTime", t);
+}
+
 const COLS = 5;
 const MAX = 1000;
 const STAMP = { "珠菜":"🍓", "煌":"🔫", "琉眞":"🪲" };
@@ -109,6 +129,7 @@ function toggleParent(){
   if(pin !== getPin()) return alert("PINが違います");
   parentMode = !parentMode;
   document.getElementById("parentState").textContent = parentMode ? "ON" : "OFF";
+  render();
 }
 function changePin(){
   const pin = prompt("現在のPIN");
@@ -124,9 +145,32 @@ function addStamp(){
   let date = document.getElementById("date").value;
   const special = document.getElementById("special").checked;
   if(!kid) return alert("なまえを選んでください");
-  if(!parentMode) date = today();
-  if(parentMode && special) date = "SPECIAL";
+
   const stamps = loadStamps();
+  const todayStr = today();
+
+  // 子どもモード制限
+  if(!parentMode){
+    date = todayStr;
+
+    // 同じ日に2回禁止
+    if(stamps.some(s => s.kid===kid && s.date===todayStr)){
+      return alert("今日はもうスタンプ済みだよ！");
+    }
+
+    // 時間制限
+    const now = new Date();
+    const nowMin = now.getHours()*60 + now.getMinutes();
+    const [h,m] = loadTargetTime().split(":").map(Number);
+    const limitMin = h*60 + m;
+
+    if(nowMin > limitMin){
+      return alert("今日は時間オーバー💦\n明日がんばろう！");
+    }
+  }
+
+  if(parentMode && special) date = "SPECIAL";
+
   stamps.push({kid, date});
   saveStamps(stamps);
   render();
@@ -209,6 +253,10 @@ function render(){
     tr.appendChild(num);
     tbody.appendChild(tr);
   }
+
+ document.getElementById("targetTime").value = loadTargetTime();
+ document.getElementById("special").disabled = !parentMode;
+
 }
 
 function renderHistory(stamps){
@@ -227,6 +275,7 @@ function renderHistory(stamps){
 
 document.getElementById("date").value = today();
 render();
+
 
 function playAnimation(label){
   const anim=document.createElement("div");
@@ -256,6 +305,9 @@ function playAnimation(label){
   setTimeout(()=>anim.remove(), 1800);
 }
 
+  document.getElementById("targetTime").addEventListener("change", e=>{
+    saveTargetTime(e.target.value);
+  });
 
 </script>
 </body>
