@@ -18,24 +18,10 @@
   .row { display:flex; justify-content:space-between; margin-bottom:8px; }
   #rewards td button { width:100%; box-sizing:border-box; padding:2px 4px; font-size:8px; }
   #rewards td { text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:14px; }
-.history-box {
-  border:1px solid #ccc;
-  border-radius:8px;
-  padding:8px;
-  margin-bottom:10px;
-  background:#fafafa;
-}
-.history-box h3 {
-  margin:0 0 6px 0;
-  font-size:14px;
-}
-.history-list {
-  font-size:12px;
-  line-height:1.5;
-  max-height:120px;
-  overflow-y:auto;
-}
-
+  .history-box { border:1px solid #ccc; border-radius:8px; padding:8px; margin-bottom:10px; background:#fafafa; }
+  .history-box h3 { margin:0 0 6px 0; font-size:14px; }
+  .history-list { font-size:12px; line-height:1.5; max-height:120px; overflow-y:auto; }
+  .badge-parent { background:#e8fff1; border:1px solid #7ad3a8; border-radius:999px; padding:2px 8px; font-size:11px; }
 </style>
 </head>
 <body>
@@ -57,6 +43,16 @@
   <button onclick="addStamp()">スタンプ</button>
   <button onclick="removeOne()">1個削除</button>
   <button onclick="removeAll()">全削除</button>
+
+  <label style="font-size:12px;">
+    <input type="checkbox" id="specialStamp"> ⭐ 日付なし
+  </label>
+
+  <label style="font-size:12px;">
+    <input type="checkbox" id="parentMode"> 👨‍👩‍👧 保護者モード
+  </label>
+  <input type="password" id="parentPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="4桁PIN" style="width:90px;">
+  <span id="parentState" class="badge-parent">🔒</span>
 </div>
 
 <div class="table-wrap">
@@ -112,92 +108,102 @@ const REWARDS = [
   { need:1000, label:"フトアゴヒゲトカゲ🐊" }
 ];
 
-// 今日の日付
+const PARENT_PIN = "1234"; // ★ここを変更
+
 function today() {
   const now = new Date();
   const jst = new Date(now.getTime() + 9*60*60*1000);
-  const yyyy = jst.getFullYear();
-  const mm = String(jst.getMonth()+1).padStart(2,'0');
-  const dd = String(jst.getDate()).padStart(2,'0');
-  return `${yyyy}-${mm}-${dd}`;
+  return `${jst.getFullYear()}-${String(jst.getMonth()+1).padStart(2,'0')}-${String(jst.getDate()).padStart(2,'0')}`;
 }
 
-// localStorage
-function loadStamps() { return JSON.parse(localStorage.getItem("stamps1000")||"[]"); }
-function saveStamps(data) { localStorage.setItem("stamps1000", JSON.stringify(data)); }
-function loadLimits() {
+function loadStamps(){ return JSON.parse(localStorage.getItem("stamps1000")||"[]"); }
+function saveStamps(d){ localStorage.setItem("stamps1000", JSON.stringify(d)); }
+function loadLimits(){
   const limits = JSON.parse(localStorage.getItem("limits")||"{}");
-  ["珠菜","煌","琉眞"].forEach(kid => { if(limits[kid]) document.getElementById(`limit-${kid}`).value = limits[kid]; });
+  ["珠菜","煌","琉眞"].forEach(k=>{ if(limits[k]) document.getElementById(`limit-${k}`).value = limits[k]; });
 }
-function saveLimit(kid) {
-  const value = document.getElementById(`limit-${kid}`).value;
+["珠菜","煌","琉眞"].forEach(k=>document.getElementById(`limit-${k}`).addEventListener("change", ()=>{
   const limits = JSON.parse(localStorage.getItem("limits")||"{}");
-  limits[kid] = value;
+  limits[k] = document.getElementById(`limit-${k}`).value;
   localStorage.setItem("limits", JSON.stringify(limits));
-}
+}));
 
-// イベント登録
-["珠菜","煌","琉眞"].forEach(kid => {
-  document.getElementById(`limit-${kid}`).addEventListener("change", () => saveLimit(kid));
+function isParentMode(){ return localStorage.getItem("parentMode")==="1"; }
+function updateParentUI(){
+  const on = isParentMode();
+  document.getElementById("parentMode").checked = on;
+  document.getElementById("parentState").textContent = on ? "🔓 解除中" : "🔒 ロック";
+}
+document.getElementById("parentMode").addEventListener("change", ()=>{
+  const on = document.getElementById("parentMode").checked;
+  if(on){
+    if(document.getElementById("parentPin").value === PARENT_PIN){
+      localStorage.setItem("parentMode","1");
+      alert("保護者モードON");
+    } else {
+      alert("PINが違います");
+      document.getElementById("parentMode").checked = false;
+    }
+  } else {
+    localStorage.removeItem("parentMode");
+  }
+  document.getElementById("parentPin").value="";
+  updateParentUI();
 });
 
-// スタンプ追加
-function addStamp() {
-  const date = document.getElementById("date").value;
+function addStamp(){
+  let date = document.getElementById("date").value;
   const kid = document.getElementById("kid").value;
-  if (!date || !kid) { alert("日にちとなまえを選んでください"); return; }
+  const special = document.getElementById("specialStamp").checked;
+
+  if(!kid){ alert("なまえを選んでください"); return; }
+  if(!special && !date){ alert("日にちを選んでください（⭐日付なし可）"); return; }
+  if(special) date = "SPECIAL";
 
   const stamps = loadStamps();
-  if (stamps.length >= MAX) { alert("スタンプは1000個までです"); return; }
-  if (stamps.some(s=>s.date===date && s.kid===kid)) { alert("この日はすでにスタンプがあります"); return; }
+  if(stamps.length >= MAX){ alert("1000個までです"); return; }
 
-  // 過去日は不可
-  const selectedDate = new Date(date);
-  const todayDate = new Date(today());
-  if (selectedDate < todayDate) { alert("過去の日付にはスタンプできません"); return; }
-
-  // 今日の場合のみ目標時間チェック
-  if (date === today()) {
-    const limitTime = document.getElementById(`limit-${kid}`).value;
-    const [h,m] = limitTime.split(":").map(Number);
-    const now = new Date();
-    const limitDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
-    if (now > limitDate) { alert("目標時間を過ぎています"); return; }
+  if(!isParentMode()){
+    if(stamps.some(s=>s.date===date && s.kid===kid)){ alert("この日はすでにあります"); return; }
+    if(!special){
+      const selectedDate = new Date(date);
+      const todayDate = new Date(today());
+      if(selectedDate < todayDate){ alert("過去日は不可"); return; }
+      if(date === today()){
+        const [h,m] = document.getElementById(`limit-${kid}`).value.split(":").map(Number);
+        const now = new Date();
+        const limitDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+        if(now > limitDate){ alert("目標時間を過ぎています"); return; }
+      }
+    }
   }
 
-  stamps.push({ date, kid });
+  stamps.push({ date, kid, special });
   saveStamps(stamps);
   render();
 }
 
-// スタンプ削除
-function removeOne() {
+function removeOne(){
+  if(!isParentMode()){ alert("保護者モードでのみ削除できます"); return; }
   const stamps = loadStamps();
-  if (stamps.length===0) return;
+  if(stamps.length===0) return;
   stamps.pop();
   saveStamps(stamps);
   render();
 }
-function removeAll() {
-  if (!confirm("すべてのスタンプを削除しますか？")) return;
+function removeAll(){
+  if(!isParentMode()){ alert("保護者モードでのみ全削除できます"); return; }
+  if(!confirm("すべて削除しますか？")) return;
   localStorage.removeItem("stamps1000");
   render();
 }
 
-// 景品交換
-function renderRewards(total) {
-  const tbody = document.getElementById("rewards");
+function renderRewards(total){
+  const tbody=document.getElementById("rewards");
   tbody.innerHTML="";
   REWARDS.forEach(r=>{
     const tr=document.createElement("tr");
-    const tdNeed=document.createElement("td"); tdNeed.textContent=r.need;
-    const tdLabel=document.createElement("td"); tdLabel.textContent=r.label;
-    const tdBtn=document.createElement("td");
-    const btn=document.createElement("button");
-    btn.textContent="交換"; btn.disabled=total<r.need;
-    btn.onclick=()=>exchange(r.need,r.label);
-    tdBtn.appendChild(btn);
-    tr.appendChild(tdNeed); tr.appendChild(tdLabel); tr.appendChild(tdBtn);
+    tr.innerHTML = `<td>${r.need}</td><td>${r.label}</td><td><button ${total<r.need?'disabled':''} onclick="exchange(${r.need}, '${r.label.replace(/'/g,"\\'")}')">交換</button></td>`;
     tbody.appendChild(tr);
   });
 }
@@ -212,63 +218,36 @@ function exchange(need,label){
 function playAnimation(label){
   const anim=document.createElement("div");
   anim.textContent=`🎉 ${label} GET!! 🎉`;
-  anim.style.position="fixed";
-  anim.style.top="50%"; anim.style.left="50%";
-  anim.style.transform="translate(-50%,-50%) scale(0.5)";
-  anim.style.fontSize="32px"; anim.style.background="rgba(255,255,255,0.95)";
-  anim.style.padding="20px 30px"; anim.style.borderRadius="16px";
-  anim.style.boxShadow="0 8px 20px rgba(0,0,0,0.3)";
-  anim.style.transition="all 0.6s ease"; anim.style.zIndex="9999";
+  Object.assign(anim.style,{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%) scale(0.5)",fontSize:"32px",background:"rgba(255,255,255,0.95)",padding:"20px 30px",borderRadius:"16px",boxShadow:"0 8px 20px rgba(0,0,0,0.3)",transition:"all 0.6s ease",zIndex:"9999"});
   document.body.appendChild(anim);
   requestAnimationFrame(()=>{ anim.style.transform="translate(-50%,-50%) scale(1.2)"; });
   setTimeout(()=>{ anim.style.opacity="0"; anim.style.transform="translate(-50%,-60%) scale(1)"; }, 1200);
   setTimeout(()=>anim.remove(),1800);
 }
 
-// 表の描画
-function render() {
-  const stamps=loadStamps();
-  const tbody=document.getElementById("sheet");
-  tbody.innerHTML="";
-  const count={ "珠菜":0, "煌":0, "琉眞":0 };
-  stamps.forEach(s=>count[s.kid]++);
-  const total=stamps.length;
-  document.getElementById("totals").textContent=
-    `合計 ${total}個 ／ 珠菜 ${count["珠菜"]} ・ 煌 ${count["煌"]} ・ 琉眞 ${count["琉眞"]}`;
-  renderRewards(total);
-  renderHistory(stamps);
-
 function renderHistory(stamps){
   const box = document.getElementById("history");
-  box.innerHTML = "";
-
+  box.innerHTML="";
   ["珠菜","煌","琉眞"].forEach(kid=>{
-    const list = stamps.filter(s => s.kid === kid);
-
-    const div = document.createElement("div");
-    div.className = "history-box";
-
-    const h3 = document.createElement("h3");
-    h3.textContent = `${kid}（${list.length}個）`;
-    div.appendChild(h3);
-
-    const ul = document.createElement("div");
-    ul.className = "history-list";
-
-    if(list.length === 0){
-      ul.textContent = "まだスタンプはありません";
-    } else {
-      ul.innerHTML = list
-        .slice().reverse()
-        .map(s => `📅 ${s.date}`)
-        .join("<br>");
-    }
-
-    div.appendChild(ul);
+    const list = stamps.filter(s=>s.kid===kid);
+    const div=document.createElement("div");
+    div.className="history-box";
+    div.innerHTML = `<h3>${kid}（${list.length}個）</h3>
+      <div class="history-list">${list.length?list.slice().reverse().map(s=>`📅 ${s.date==="SPECIAL"?"スペシャル⭐":s.date}`).join("<br>"):"まだスタンプはありません"}</div>`;
     box.appendChild(div);
   });
 }
 
+function render(){
+  const stamps = loadStamps();
+  const tbody = document.getElementById("sheet");
+  tbody.innerHTML="";
+  const count={珠菜:0,煌:0,琉眞:0};
+  stamps.forEach(s=>count[s.kid]++);
+  const total=stamps.length;
+  document.getElementById("totals").textContent = `合計 ${total}個 ／ 珠菜 ${count.珠菜} ・ 煌 ${count.煌} ・ 琉眞 ${count.琉眞}`;
+  renderRewards(total);
+  renderHistory(stamps);
 
   const totalRows = Math.ceil(MAX / COLS);
   for(let r=0;r<totalRows;r++){
@@ -278,8 +257,8 @@ function renderHistory(stamps){
       const td=document.createElement("td");
       if(idx<stamps.length){
         const s=stamps[idx];
-        td.textContent=STAMP[s.kid]||"⭐";
-        td.title=`${idx+1}個目：${s.date} ${s.kid}`;
+        td.textContent = s.special ? "⭐" : (STAMP[s.kid]||"⭐");
+        td.title = `${idx+1}個目：${s.date==="SPECIAL"?"スペシャル":s.date} ${s.kid}`;
       }
       tr.appendChild(td);
     }
@@ -288,9 +267,9 @@ function renderHistory(stamps){
     tr.appendChild(num);
     tbody.appendChild(tr);
   }
+  updateParentUI();
 }
 
-// 初期化
 document.getElementById("date").value = today();
 loadLimits();
 render();
